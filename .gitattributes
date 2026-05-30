@@ -1,3 +1,5 @@
 raw_data/*.csv filter=lfs diff=lfs merge=lfs -text
 *.csv filter=lfs diff=lfs merge=lfs -text
 *.db filter=lfs diff=lfs merge=lfs -text
+processed_data/chromadb/*.sqlite3 filter=lfs diff=lfs merge=lfs -text
+processed_data/chromadb/chroma.sqlite3 filter=lfs diff=lfs merge=lfs -text
