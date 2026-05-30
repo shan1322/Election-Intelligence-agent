@@ -2,84 +2,97 @@ import sys
 sys.path.insert(0, '/workspaces/codespaces-blank/election-intelligence')
 
 import json
-import sqlite3
-import pandas as pd
 import gradio as gr
-from agents.sql_agent import ask, call_llm, run_sql
-from agents.visualization_agent import ask_visualization
+from graph.workflow import ask, GRAPH
 
-DB = "/workspaces/codespaces-blank/election-intelligence/raw_data/elections.db"
-
-def query(user_input):
+def run_query(user_input):
     if not user_input.strip():
-        return "Please enter a question.", "", None
+        return "Please enter a question.", "", "", None
 
-    # Step 1: Get SQL from LLM
-    sql = call_llm(user_input)
-    print(f"SQL: {sql}")
+    result = ask(user_input)
 
-    # Step 2: Run SQL
-    try:
-        conn = sqlite3.connect(DB)
-        df = pd.read_sql_query(sql, conn)
-        conn.close()
-    except Exception as e:
-        return f"SQL Error: {e}", sql, None
+    answer = result.get("answer", "No answer generated.")
+    sql = result.get("sql", "")
+    viz = result.get("viz", {})
 
-    if df.empty:
-        return "No results found.", sql, None
+    # Agent trace
+    trace = "Agents called this query:\n\n"
+    # Re-run supervisor just for display — read from result
+    if sql:
+        trace += "✅ SQL Agent — queried election database\n"
+    if "Wikipedia" in answer:
+        trace += "✅ Wikipedia Agent — fetched background\n"
+    if "News" in answer or "news" in answer.lower():
+        trace += "✅ News Agent — fetched recent news\n"
+    if "Budget" in answer or "President" in answer:
+        trace += "✅ RAG Agent — searched speeches\n"
+    if viz.get("should_visualize"):
+        trace += f"✅ Visualization Agent — created {viz.get('chart_type', '')} chart\n"
 
-    # Step 3: Format table
-    table = df.head(20).to_markdown(index=False)
-    if len(df) > 20:
-        table += f"\n\n*Showing 20 of {len(df)} rows*"
-
-    # Step 4: Try visualization
-    viz_result = ask_visualization(user_input, df)
+    # Chart
     chart = None
-    if viz_result.get("should_visualize") and viz_result.get("chart_json"):
+    if viz.get("should_visualize") and viz.get("chart_json"):
         import plotly.io as pio
-        chart = pio.from_json(viz_result["chart_json"])
+        chart = pio.from_json(viz["chart_json"])
 
-    return table, sql, chart
+    return answer, sql, trace, chart
 
-with gr.Blocks(title="India Election Intelligence") as app:
+
+with gr.Blocks(title="India Election Intelligence", theme=gr.themes.Soft()) as app:
+
     gr.Markdown("# 🗳️ India Election Intelligence Agent")
-    gr.Markdown("Ask anything about Indian elections from 1962 to 2019.")
+    gr.Markdown("Multi-agent system powered by LangGraph — SQL + Wikipedia + News + RAG + Visualization")
 
     with gr.Row():
-        inp = gr.Textbox(
-            placeholder="e.g. Show voting turnout history of Varanasi",
-            label="Your Question",
-            lines=2
-        )
-        btn = gr.Button("Ask", variant="primary")
+        with gr.Column(scale=3):
+            inp = gr.Textbox(
+                placeholder="e.g. Who won Varanasi in 2019 and what is its history?",
+                label="Ask anything about Indian elections",
+                lines=2
+            )
+            btn = gr.Button("Ask", variant="primary", size="lg")
+
+            gr.Examples(
+                examples=[
+                    ["Who won Varanasi in 2019?"],
+                    ["Show voter turnout trend in Varanasi across all elections"],
+                    ["Tell me about Narendra Modi"],
+                    ["What did the 2019 budget say about farmers?"],
+                    ["BJP vs INC seats in 2019 Lok Sabha"],
+                    ["Who won Varanasi in 2019 and what is its history?"],
+                    ["Latest news about Rahul Gandhi"],
+                    ["Defence spending in budget speeches over the years"],
+                ],
+                inputs=inp
+            )
+
+        with gr.Column(scale=2):
+            trace_out = gr.Textbox(
+                label="🤖 Agents Called",
+                lines=8,
+                interactive=False
+            )
+            sql_out = gr.Code(
+                language="sql",
+                label="Generated SQL",
+            )
 
     with gr.Row():
-        out = gr.Markdown(label="Results")
+        answer_out = gr.Markdown(label="Answer")
 
     with gr.Row():
         chart_out = gr.Plot(label="Visualization")
 
-    with gr.Accordion("Generated SQL", open=False):
-        sql_out = gr.Code(language="sql", label="SQL Query")
-
-    gr.Examples(
-        examples=[
-            ["Show voting turnout history of Varanasi"],
-            ["How many seats did each party win in 2019 Lok Sabha?"],
-            ["BJP vs INC vote share trend in UP Lok Sabha"],
-            ["Who won Varanasi in 2019?"],
-            ["Show Rahul Gandhi election history"],
-            ["Closest contests in Maharashtra 2019 Vidhan Sabha"],
-            ["How many women won in 2019 Lok Sabha?"],
-            ["Which party won most seats state wise in 2014?"],
-        ],
-        inputs=inp
+    btn.click(
+        fn=run_query,
+        inputs=inp,
+        outputs=[answer_out, sql_out, trace_out, chart_out]
+    )
+    inp.submit(
+        fn=run_query,
+        inputs=inp,
+        outputs=[answer_out, sql_out, trace_out, chart_out]
     )
 
-    btn.click(fn=query, inputs=inp, outputs=[out, sql_out, chart_out])
-    inp.submit(fn=query, inputs=inp, outputs=[out, sql_out, chart_out])
-
 if __name__ == "__main__":
-    app.launch(server_name="0.0.0.0", server_port=7890, share=False)
+    app.launch(server_name="0.0.0.0", server_port=7860, share=False)

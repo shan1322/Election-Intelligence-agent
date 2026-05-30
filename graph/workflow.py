@@ -158,10 +158,10 @@ def synthesis_node(state: AgentState) -> AgentState:
     payload = {
         "model": MODEL,
         "messages": [
-            {"role": "system", "content": "You are an Indian election and political expert. Answer using only the provided context. Be specific with numbers. Cite sources at the end."},
+            {"role": "system", "content": "You are an Indian election expert. Rules: 1) Use ONLY data provided in context — never invent or assume facts. 2) If election data is provided, summarize it accurately with exact numbers. 3) If no relevant data is in context, say exactly: I do not have enough data to answer this. 4) Never hallucinate names, numbers or events. 5) Be concise and specific. 6) Cite sources at end."},
             {"role": "user", "content": context}
         ],
-        "max_tokens": 600,
+        "max_tokens": 1200,
         "temperature": 0.2
     }
     response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=60)
@@ -212,7 +212,8 @@ def ask(query: str) -> dict:
     return {
         "answer" : result["final_answer"],
         "sql"    : result.get("sql_result", {}).get("sql", ""),
-        "viz"    : result.get("viz_result", {})
+        "viz"    : result.get("viz_result", {}),
+        "rows"   : result.get("sql_result", {}).get("rows", [])
     }
 
 if __name__ == "__main__":
