@@ -140,5 +140,23 @@ SQL: SELECT Constituency_Name, State_Name, AVG(N_Cand) as avg_candidates FROM lo
 Q: Candidates who won more than 5 terms in Vidhan Sabha
 SQL: SELECT Candidate, State_Name, MAX(No_Terms) as terms FROM vidhan_sabha WHERE Poll_No = 0 GROUP BY Candidate, State_Name HAVING MAX(No_Terms) > 5 ORDER BY terms DESC;
 
+Q: Show voter turnout trend in Varanasi across all elections
+SQL: SELECT Year, AVG(Turnout_Percentage) as Turnout FROM lok_sabha WHERE Constituency_Name LIKE '%VARANASI%' AND Poll_No = 0 GROUP BY Year ORDER BY Year;
+
+Q: Voter turnout history of Gorakhpur
+SQL: SELECT Year, AVG(Turnout_Percentage) as Turnout FROM lok_sabha WHERE Constituency_Name LIKE '%GORAKHPUR%' AND Poll_No = 0 GROUP BY Year ORDER BY Year;
+
+Q: Show turnout trend across all elections for a constituency
+SQL: SELECT Year, AVG(Turnout_Percentage) as Turnout FROM lok_sabha WHERE Constituency_Name LIKE '%CONSTITUENCY%' AND Poll_No = 0 GROUP BY Year ORDER BY Year;
+
+Q: Show voter turnout trend in Varanasi across all elections
+SQL: SELECT Year, AVG(Turnout_Percentage) as Turnout FROM lok_sabha WHERE Constituency_Name LIKE '%VARANASI%' AND Poll_No = 0 GROUP BY Year ORDER BY Year;
+
+Q: Voter turnout history of Gorakhpur
+SQL: SELECT Year, AVG(Turnout_Percentage) as Turnout FROM lok_sabha WHERE Constituency_Name LIKE '%GORAKHPUR%' AND Poll_No = 0 GROUP BY Year ORDER BY Year;
+
+Q: Show turnout trend across all elections for a constituency
+SQL: SELECT Year, AVG(Turnout_Percentage) as Turnout FROM lok_sabha WHERE Constituency_Name LIKE '%CONSTITUENCY%' AND Poll_No = 0 GROUP BY Year ORDER BY Year;
+
 RESPOND WITH ONLY THE SQL QUERY. NO EXPLANATION. NO MARKDOWN. NO BACKTICKS. JUST THE RAW SQL.
 """

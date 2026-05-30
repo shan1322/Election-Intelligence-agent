@@ -82,7 +82,7 @@ def ask_visualization(user_query: str, df: pd.DataFrame) -> dict:
 
 if __name__ == "__main__":
     import sqlite3
-    DB = "/workspaces/codespaces-blank/election-intelligence/raw_data/elections.db"
+    DB = "raw_data/elections.db"
     conn = sqlite3.connect(DB)
 
     query1 = "Show voting turnout history of Varanasi"

@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.insert(0, '/workspaces/codespaces-blank/election-intelligence')
+sys.path.insert(0, '/home/user/app')
 
 import json
 import sqlite3
@@ -19,7 +19,7 @@ from agents.supervisor_prompt import SUPERVISOR_PROMPT
 HF_TOKEN   = os.getenv("HF_TOKEN", "")
 HF_API_URL = "https://router.huggingface.co/v1/chat/completions"
 MODEL      = "meta-llama/Llama-3.1-8B-Instruct"
-DB_PATH    = "/workspaces/codespaces-blank/election-intelligence/raw_data/elections.db"
+DB_PATH    = "raw_data/elections.db"
 
 # ─── STATE ────────────────────────────────────────────────────────────────────
 

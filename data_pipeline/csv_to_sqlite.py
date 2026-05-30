@@ -1,7 +1,7 @@
 import pandas as pd
 import sqlite3
 
-base = "/workspaces/codespaces-blank/election-intelligence/raw_data"
+base = "raw_data"
 
 print("Loading CSVs...")
 lok = pd.read_csv(f"{base}/lok_sabha_all_elections.csv", low_memory=False)
