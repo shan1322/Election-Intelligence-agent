@@ -13,6 +13,12 @@ A multi-agent AI system for querying and analyzing Indian election data from 196
 
 ![Demo](animations/animation_election.gif)
 
+## 🎥 Video Walkthrough
+[![YouTube](https://img.shields.io/badge/YouTube-Watch-red?style=for-the-badge&logo=youtube)](https://youtu.be/BkbhJby8kPM)
+
+## 🚀 Live Demo
+[![HuggingFace](https://img.shields.io/badge/HuggingFace-Try%20it-yellow?style=for-the-badge&logo=huggingface)](https://huggingface.co/spaces/shan1322/election-intel-agent)
+
 ## What it does
 
 Ask any question about Indian elections in plain English and the system automatically routes it to the right agents, queries the database, searches the web, retrieves policy documents, and generates visualizations — all in one response.
