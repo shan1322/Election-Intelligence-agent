@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#fff; font-family:'Segoe UI',sans-serif; padding:16px; }
+
+.flow { display:flex; align-items:center; gap:0; width:100%; }
+
+.node { border-radius:8px; padding:8px 10px; display:flex; flex-direction:column; align-items:center; gap:2px; flex-shrink:0; transition: border-color 0.3s, background 0.3s, box-shadow 0.3s; }
+.node-label { font-size:11px; font-weight:600; text-align:center; color:#222; white-space:nowrap; }
+.node-sub   { font-size:9px; color:#666; text-align:center; white-space:nowrap; }
+.logo       { font-size:14px; }
+
+.n-user  { background:#eef2ff; border:2px solid #aab8f5; }
+.n-super { background:#f3eeff; border:2px solid #c4a0ff; }
+.n-synth { background:#f3eeff; border:2px solid #c4a0ff; }
+.n-out   { background:#e8f4ff; border:2px solid #90c0f0; }
+
+.node.active { box-shadow: 0 0 0 3px rgba(40,200,100,0.35); }
+.n-user.active  { background:#e8fff2; border-color:#22c066; }
+.n-super.active { background:#e8fff2; border-color:#22c066; }
+.n-synth.active { background:#e8fff2; border-color:#22c066; }
+.n-out.active   { background:#e8fff2; border-color:#22c066; }
+
+.agents-col { display:flex; flex-direction:column; gap:5px; flex-shrink:0; }
+.agent { border-radius:7px; padding:5px 10px; display:flex; align-items:center; gap:5px; transition: border-color 0.3s, background 0.3s, box-shadow 0.3s; opacity:0.4; }
+.agent-label { font-size:10px; font-weight:600; color:#222; white-space:nowrap; }
+.agent-sub   { font-size:9px; color:#666; white-space:nowrap; }
+
+.a-sql  { background:#edfaf3; border:1.5px solid #2a9d6e; }
+.a-wiki { background:#fff0f0; border:1.5px solid #c0392b; }
+.a-news { background:#fff8ee; border:1.5px solid #d4800a; }
+.a-rag  { background:#eef5ff; border:1.5px solid #2980b9; }
+.a-viz  { background:#fffff0; border:1.5px solid #a0a020; }
+
+.agent.active { opacity:1; box-shadow:0 0 0 3px rgba(40,200,100,0.35); border-color:#22c066 !important; background:#e8fff2 !important; }
+.agent.dim    { opacity:0.25; }
+
+svg line, svg polygon { transition: stroke 0.3s, opacity 0.3s; }
+line.active { stroke:#22c066 !important; stroke-width:2.5 !important; }
+line.dim    { opacity:0.15; }
+
+.status { font-size:11px; color:#666; margin-top:12px; min-height:16px; text-align:center; }
+.status span { color:#22c066; font-weight:600; }
+
+button { margin-top:10px; padding:6px 18px; background:#4f6ef7; color:white; border:none; border-radius:6px; font-size:12px; cursor:pointer; }
+button:hover { background:#3d5ce0; }
+
+.query-select { margin-top:10px; font-size:11px; color:#555; display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center; }
+.qbtn { padding:4px 10px; border:1px solid #ccc; border-radius:20px; font-size:10px; cursor:pointer; background:#f8f8f8; transition:all 0.2s; }
+.qbtn:hover, .qbtn.selected { background:#4f6ef7; color:white; border-color:#4f6ef7; }
+</style>
+</head>
+<body>
+
+<div class="flow" id="flow">
+
+  <!-- User -->
+  <div class="node n-user" id="n-user">
+    <div class="logo">🧑</div>
+    <div class="node-label">User Query</div>
+    <div class="node-sub" id="query-text">...</div>
+  </div>
+
+  <!-- Arrow 1 -->
+  <svg width="32" height="20" style="flex-shrink:0;overflow:visible">
+    <line id="arr1" x1="0" y1="10" x2="26" y2="10" stroke="#ccc" stroke-width="1.5"/>
+    <polygon id="arr1h" points="22,6 28,10 22,14" fill="#ccc"/>
+  </svg>
+
+  <!-- Supervisor -->
+  <div class="node n-super" id="n-super">
+    <div class="logo">🧠</div>
+    <div class="node-label">Supervisor</div>
+    <div class="node-sub">Routes to agents</div>
+  </div>
+
+  <!-- Fan out -->
+  <svg id="fanout" width="44" height="190" style="flex-shrink:0;overflow:visible">
+    <line id="fo0" x1="0" y1="95" x2="44" y2="19"  stroke="#ccc" stroke-width="1.5"/>
+    <line id="fo1" x1="0" y1="95" x2="44" y2="57"  stroke="#ccc" stroke-width="1.5"/>
+    <line id="fo2" x1="0" y1="95" x2="44" y2="95"  stroke="#ccc" stroke-width="1.5"/>
+    <line id="fo3" x1="0" y1="95" x2="44" y2="133" stroke="#ccc" stroke-width="1.5"/>
+    <line id="fo4" x1="0" y1="95" x2="44" y2="171" stroke="#ccc" stroke-width="1.5"/>
+  </svg>
+
+  <!-- Agents -->
+  <div class="agents-col">
+    <div class="agent a-sql" id="a-sql">
+      <span style="font-size:13px">🗃️</span>
+      <div><div class="agent-label">SQL Agent</div><div class="agent-sub">SQLite · 575K rows</div></div>
+    </div>
+    <div class="agent a-wiki" id="a-wiki">
+      <span style="font-size:13px">📖</span>
+      <div><div class="agent-label">Wikipedia</div><div class="agent-sub">Background info</div></div>
+    </div>
+    <div class="agent a-news" id="a-news">
+      <span style="font-size:13px">📰</span>
+      <div><div class="agent-label">News Agent</div><div class="agent-sub">DDGS · Recent</div></div>
+    </div>
+    <div class="agent a-rag" id="a-rag">
+      <span style="font-size:13px">📚</span>
+      <div><div class="agent-label">RAG Agent</div><div class="agent-sub">BM25 + ChromaDB</div></div>
+    </div>
+    <div class="agent a-viz" id="a-viz">
+      <span style="font-size:13px">📊</span>
+      <div><div class="agent-label">Viz Agent</div><div class="agent-sub">LLM → Plotly</div></div>
+    </div>
+  </div>
+
+  <!-- Fan in -->
+  <svg id="fanin" width="44" height="190" style="flex-shrink:0;overflow:visible">
+    <line id="fi0" x1="0" y1="19"  x2="44" y2="95" stroke="#ccc" stroke-width="1.5"/>
+    <line id="fi1" x1="0" y1="57"  x2="44" y2="95" stroke="#ccc" stroke-width="1.5"/>
+    <line id="fi2" x1="0" y1="95"  x2="44" y2="95" stroke="#ccc" stroke-width="1.5"/>
+    <line id="fi3" x1="0" y1="133" x2="44" y2="95" stroke="#ccc" stroke-width="1.5"/>
+    <line id="fi4" x1="0" y1="171" x2="44" y2="95" stroke="#ccc" stroke-width="1.5"/>
+  </svg>
+
+  <!-- Synthesis -->
+  <div class="node n-synth" id="n-synth">
+    <div class="logo">✨</div>
+    <div class="node-label">Synthesis</div>
+    <div class="node-sub">Combines results</div>
+  </div>
+
+  <!-- Arrow 2 -->
+  <svg width="32" height="20" style="flex-shrink:0;overflow:visible">
+    <line id="arr2" x1="0" y1="10" x2="26" y2="10" stroke="#ccc" stroke-width="1.5"/>
+    <polygon id="arr2h" points="22,6 28,10 22,14" fill="#ccc"/>
+  </svg>
+
+  <!-- Output -->
+  <div class="node n-out" id="n-out">
+    <div class="logo">🖥️</div>
+    <div class="node-label">FastAPI UI</div>
+    <div class="node-sub">Answer + Chart</div>
+  </div>
+
+</div>
+
+<div class="status" id="status">Pick a query and press Run</div>
+
+<div class="query-select">
+  <span style="font-size:10px;color:#888">Try:</span>
+  <button class="qbtn selected" id="q0" onclick="selectQ(0)">Who won Varanasi 2019?</button>
+  <button class="qbtn" id="q1" onclick="selectQ(1)">Tell me about Modi</button>
+  <button class="qbtn" id="q2" onclick="selectQ(2)">Budget say about farmers?</button>
+  <button class="qbtn" id="q3" onclick="selectQ(3)">Latest news on BJP</button>
+</div>
+
+<div style="text-align:center">
+  <button onclick="runAnim()">▶ Run</button>
+</div>
+
+<script>
+const queries = [
+  { text:"Who won Varanasi 2019?",    agents:[0,4],    label:"SQL + Viz agents selected" },
+  { text:"Tell me about Modi",         agents:[0,1,2],  label:"SQL + Wiki + News selected" },
+  { text:"Budget say about farmers?",  agents:[3],      label:"RAG agent selected" },
+  { text:"Latest news on BJP",         agents:[2],      label:"News agent selected" },
+];
+
+let selectedQ = 0;
+let running = false;
+
+function selectQ(i) {
+  selectedQ = i;
+  document.querySelectorAll('.qbtn').forEach((b,j) => b.classList.toggle('selected', j===i));
+}
+
+const agentIds = ['a-sql','a-wiki','a-news','a-rag','a-viz'];
+
+function reset() {
+  ['n-user','n-super','n-synth','n-out'].forEach(id => document.getElementById(id).classList.remove('active'));
+  agentIds.forEach(id => { const el = document.getElementById(id); el.classList.remove('active','dim'); });
+  for(let i=0;i<5;i++) {
+    document.getElementById('fo'+i).setAttribute('stroke','#ccc');
+    document.getElementById('fo'+i).setAttribute('stroke-width','1.5');
+    document.getElementById('fo'+i).classList.remove('active','dim');
+    document.getElementById('fi'+i).setAttribute('stroke','#ccc');
+    document.getElementById('fi'+i).setAttribute('stroke-width','1.5');
+    document.getElementById('fi'+i).classList.remove('active','dim');
+  }
+  ['arr1','arr1h','arr2','arr2h'].forEach(id => {
+    const el = document.getElementById(id);
+    el.setAttribute('stroke','#ccc');
+    el.setAttribute('fill','#ccc');
+  });
+  document.getElementById('status').innerHTML = 'Pick a query and press Run';
+  document.getElementById('query-text').textContent = '...';
+}
+
+function setActive(id) { document.getElementById(id).classList.add('active'); }
+function setArrow(ids, color) {
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    el.setAttribute('stroke', color);
+    el.setAttribute('fill', color);
+  });
+}
+function setLine(id, active) {
+  const el = document.getElementById(id);
+  el.setAttribute('stroke', active ? '#22c066' : '#eee');
+  el.setAttribute('stroke-width', active ? '2.5' : '1.5');
+}
+function status(msg) { document.getElementById('status').innerHTML = msg; }
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function runAnim() {
+  if(running) return;
+  running = true;
+  reset();
+  const q = queries[selectedQ];
+  document.getElementById('query-text').textContent = q.text.length > 18 ? q.text.slice(0,16)+'…' : q.text;
+
+  await wait(300);
+
+  // Step 1: User query lights up
+  status('<span>Query received</span> — routing to supervisor...');
+  setActive('n-user');
+  await wait(700);
+
+  // Step 2: Arrow to supervisor
+  setArrow(['arr1','arr1h'], '#22c066');
+  await wait(400);
+
+  // Step 3: Supervisor lights up
+  setActive('n-super');
+  status('<span>Supervisor deciding</span> — reading tool descriptions...');
+  await wait(900);
+
+  // Step 4: Fan out — only selected agents light up
+  status('<span>Agents selected:</span> ' + q.label);
+  for(let i=0;i<5;i++) {
+    if(q.agents.includes(i)) {
+      setLine('fo'+i, true);
+    } else {
+      document.getElementById('fo'+i).setAttribute('stroke','#eee');
+    }
+  }
+  await wait(500);
+
+  // Step 5: Selected agents light up one by one
+  for(let i=0;i<5;i++) {
+    const el = document.getElementById(agentIds[i]);
+    if(q.agents.includes(i)) {
+      el.classList.add('active');
+      await wait(350);
+    } else {
+      el.classList.add('dim');
+    }
+  }
+  await wait(600);
+
+  // Step 6: Fan in — selected agents feed synthesis
+  for(let i=0;i<5;i++) {
+    if(q.agents.includes(i)) setLine('fi'+i, true);
+    else document.getElementById('fi'+i).setAttribute('stroke','#eee');
+  }
+  await wait(500);
+
+  // Step 7: Synthesis
+  setActive('n-synth');
+  status('<span>Synthesis node</span> — combining all results...');
+  await wait(800);
+
+  // Step 8: Arrow to output
+  setArrow(['arr2','arr2h'], '#22c066');
+  await wait(400);
+
+  // Step 9: Output
+  setActive('n-out');
+  status('<span>Done!</span> — Answer + Chart + SQL delivered to UI');
+
+  running = false;
+}
+</script>
+</body>
+</html>
