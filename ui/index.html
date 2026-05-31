@@ -170,13 +170,13 @@ async function askQuestion() {
 
     if (data.chart_json) {
       const chartData = JSON.parse(data.chart_json);
-      Plotly.newPlot('chart-container', chartData.data, {
-        ...chartData.layout,
-        paper_bgcolor:'#1a1d2e',
-        plot_bgcolor:'#0f1117',
-        font:{ color:'#e0e0e0' },
-        margin:{ t:30, r:20, b:40, l:50 }
-      }, { responsive:true });
+      const layout = Object.assign({}, chartData.layout, {
+        paper_bgcolor: '#1a1d2e',
+        plot_bgcolor: '#0f1117',
+        font: { color: '#e0e0e0' },
+        margin: { t:30, r:20, b:40, l:50 }
+      });
+      Plotly.react('chart-container', chartData.data, layout, { responsive:true });
     }
 
   } catch(e) {

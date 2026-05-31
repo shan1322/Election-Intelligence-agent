@@ -2,6 +2,7 @@ import os
 import json
 import requests
 import pandas as pd
+import numpy as np
 from agents.viz_prompt import VIZ_PROMPT
 
 HF_TOKEN = os.getenv("HF_TOKEN", "")
@@ -37,10 +38,23 @@ Decide visualization and write plotly code."""
         print(f"[Viz] Parse error: {e}")
         return {"should_visualize": False, "reason": "parse error"}
 
+def sanitize_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Convert all numpy types to plain Python types so Plotly uses JSON not binary."""
+    df = df.copy()
+    for col in df.columns:
+        if pd.api.types.is_integer_dtype(df[col]):
+            df[col] = df[col].astype(object).where(df[col].isna(), df[col].apply(lambda x: int(x)))
+        elif pd.api.types.is_float_dtype(df[col]):
+            df[col] = df[col].astype(object).where(df[col].isna(), df[col].apply(lambda x: float(x)))
+        else:
+            df[col] = df[col].astype(str)
+    return df
+
 def execute_viz_code(code: str, df: pd.DataFrame) -> str | None:
+    df = sanitize_df(df)
     local_vars = {"df": df, "chart_json": None}
     try:
-        exec(code, {"pd": pd, "__import__": __import__}, local_vars)
+        exec(code, {"pd": pd, "np": np, "__import__": __import__}, local_vars)
         return local_vars.get("chart_json")
     except Exception as e:
         print(f"[Viz] Code execution error: {e}")
@@ -71,6 +85,9 @@ def ask_visualization(user_query: str, df: pd.DataFrame) -> dict:
 
     if chart_json:
         print("[Viz] Chart created successfully")
+        # Verify no binary encoding
+        if "bdata" in chart_json:
+            print("[Viz] WARNING: binary data detected, chart may not render in browser")
         return {
             "should_visualize": True,
             "chart_type": decision.get("chart_type"),
@@ -79,21 +96,3 @@ def ask_visualization(user_query: str, df: pd.DataFrame) -> dict:
         }
 
     return {"should_visualize": False, "reason": "code execution failed"}
-
-if __name__ == "__main__":
-    import sqlite3
-    DB = "raw_data/elections.db"
-    conn = sqlite3.connect(DB)
-
-    query1 = "Show voting turnout history of Varanasi"
-    df1 = pd.read_sql_query("""
-        SELECT Year, AVG(Turnout_Percentage) as Turnout
-        FROM lok_sabha WHERE Constituency_Name LIKE '%VARANASI%'
-        AND Poll_No = 0 GROUP BY Year ORDER BY Year
-    """, conn)
-    print(f"Test 1:\n{df1}")
-    result1 = ask_visualization(query1, df1)
-    print(f"should_visualize={result1['should_visualize']}")
-
-
-    conn.close()
